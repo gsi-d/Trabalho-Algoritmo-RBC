@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Recomendação de Filmes (RBC)</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/algoritmo.js"></script> 
+</head>
+<body>
+
+    <header>
+        <h1>Sistema de Recomendação de Filmes (RBC)</h1>
+    </header>
+
+    <main class="container">
+        
+        <section id="busca-container" class="card">
+            <h2>Busque por um Filme</h2>
+            <p>Digite o nome de um filme da base de dados para encontrar os 5 mais similares.</p>
+            <div class="form-busca">
+                <input type="text" id="filme-input" placeholder="Ex: Batman: O Cavaleiro Das Trevas">
+                <button id="buscar-btn">Encontrar Similares</button>
+            </div>
+        </section>
+
+        <section id="resultados-container" class="card">
+            <h2 id="resultados-titulo">Recomendados</h2>
+            <ul id="lista-recomendacoes">
+                <li class="placeholder">Digite o nome de um filme e clique em buscar para ver as recomendações.</li>
+                </ul>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>Trabalho de Inteligência Artificial - Raciocínio Baseado em Casos</p>
+    </footer>
+
+</body>
+</html>
