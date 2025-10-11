@@ -1,29 +1,30 @@
 document.addEventListener('DOMContentLoaded', () => {
-    
-    // --- 1. Seleção dos Elementos HTML e Variáveis Globais ---
+
+    // --- Seleção dos Elementos HTML e Variáveis Globais ---
     const botaoBuscar = document.getElementById('buscar-btn');
     const campoFilme = document.getElementById('filme-input');
     const listaRecomendacoes = document.getElementById('lista-recomendacoes');
     const tituloResultados = document.getElementById('resultados-titulo');
 
-    let dadosDosFilmes = []; // Array para armazenar os dados dos filmes
+    let dadosDosFilmes = [];
 
     // Pesos para a Similaridade Global
     const pesos = {
-        genres: 0.35,
-        tagline: 0.25,
-        production_companies: 0.20,
-        runtime: 0.15,
-        original_title: 0.05
+        generos: 7,
+        palavrasChave: 5,
+        produtoras: 4,
+        notaMedia: 3,
+        titulo: 1
     };
 
-    // --- 2. Carregamento e Processamento do Arquivo CSV ---
+    // --- Carregamento e Processamento do Arquivo CSV ---
     async function carregarDados() {
         try {
             const resposta = await fetch('BaseFilmes.csv');
             if (!resposta.ok) throw new Error('Erro ao carregar o arquivo CSV.');
             const textoCSV = await resposta.text();
             dadosDosFilmes = processarCSV(textoCSV);
+            console.log(dadosDosFilmes)
             console.log("Dados dos filmes carregados com sucesso!");
         } catch (erro) {
             console.error(erro);
@@ -37,9 +38,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const idxTitulo = cabecalhos.indexOf('original_title');
         const idxGeneros = cabecalhos.indexOf('genres');
         const idxProdutoras = cabecalhos.indexOf('production_companies');
-        const idxDuracao = cabecalhos.indexOf('runtime');
-        const idxTagline = cabecalhos.indexOf('tagline');
-        
+        const idxPalavrasChave = cabecalhos.indexOf('keywords');
+        const idxNotaMedia = cabecalhos.indexOf('vote_average');
+
         const dados = [];
         for (let i = 1; i < linhas.length; i++) {
             const valores = linhas[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
@@ -47,21 +48,26 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 let generosStr = valores[idxGeneros];
                 let produtorasStr = valores[idxProdutoras];
+                let palavrasChaveStr = valores[idxPalavrasChave];
                 const filme = {
                     original_title: valores[idxTitulo]?.trim() || "",
                     genres: (generosStr && generosStr.length > 2) ? JSON.parse(generosStr.slice(1, -1).replace(/""/g, '"')).map(g => g.name) : [],
                     production_companies: (produtorasStr && produtorasStr.length > 2) ? JSON.parse(produtorasStr.slice(1, -1).replace(/""/g, '"')).map(p => p.name) : [],
-                    runtime: parseFloat(valores[idxDuracao]) || 0,
-                    tagline: valores[idxTagline]?.trim().replace(/^"|"$/g, '') || ""
+                    vote_average: parseFloat(valores[idxNotaMedia]) || 0,
+                    keywords: (palavrasChaveStr && palavrasChaveStr.length > 2) ? JSON.parse(palavrasChaveStr.slice(1, -1).replace(/""/g, '"')).map(p => p.name) : [],
                 };
+
                 if (filme.original_title && filme.genres.length > 0) dados.push(filme);
-            } catch (e) { continue; }
+            } catch (e) {
+                console.log(e)
+                continue;
+            }
         }
         return dados;
     }
 
-    // --- 3. ALGORITMO RBC PRINCIPAL ---
-    
+    // --- ALGORITMO RBC PRINCIPAL ---
+
     function encontrarTop5Similares(tituloDoFilme) {
         // Encontra o filme de entrada na nossa base de dados
         const filmeDeEntrada = dadosDosFilmes.find(f => f.original_title.toLowerCase() === tituloDoFilme.toLowerCase());
@@ -70,11 +76,24 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Pré-cálculo para normalizar a duração (runtime)
-        const duracoes = dadosDosFilmes.map(f => f.runtime);
-        const duracaoMinima = Math.min(...duracoes);
-        const duracaoMaxima = Math.max(...duracoes);
-        const intervaloDuracao = duracaoMaxima - duracaoMinima;
+        // Pré-cálculo para normalizar a nota média
+        const notas = dadosDosFilmes.map(f => f.vote_average);
+        const notaMinima = Math.min(...notas);
+        const notaMaxima = Math.max(...notas);
+        const intervaloNotas = notaMaxima - notaMinima;
+
+        const generosEntrada = new Set(filmeDeEntrada.genres);
+        const produtorasEntrada = new Set(filmeDeEntrada.production_companies);
+        const palavrasChaveEntrada = new Set(filmeDeEntrada.keywords);
+        const palavrasTituloEntrada = new Set(filmeDeEntrada.original_title.toLowerCase().split(/\s+/));
+
+        console.log('filmeDeEntrada', filmeDeEntrada);
+        console.log('intervaloNotas', intervaloNotas);
+
+        console.log('generosEntrada', generosEntrada);
+        console.log('produtorasEntrada', produtorasEntrada);
+        console.log('palavrasChaveEntrada', palavrasChaveEntrada);
+        console.log('palavrasTituloEntrada', palavrasTituloEntrada);
 
         // Varrer a lista de filmes, comparar e calcular a similaridade de cada um
         const similaridades = dadosDosFilmes.map(filmeAtual => {
@@ -82,50 +101,53 @@ document.addEventListener('DOMContentLoaded', () => {
                 return { titulo: filmeAtual.original_title, pontuacao: -1 }; // Ignora o próprio filme
             }
 
-            // --- Cálculos de Similaridade Local ---
-
-            // a) Gêneros
-            const generosEntrada = new Set(filmeDeEntrada.genres);
+            // --- Similaridade Local ---
             const generosAtual = new Set(filmeAtual.genres);
             const interseccaoGeneros = new Set([...generosEntrada].filter(g => generosAtual.has(g)));
             const uniaoGeneros = new Set([...generosEntrada, ...generosAtual]);
             const sim_generos = uniaoGeneros.size === 0 ? 0 : interseccaoGeneros.size / uniaoGeneros.size;
 
-            // b) Produtoras
-            const produtorasEntrada = new Set(filmeDeEntrada.production_companies);
             const produtorasAtual = new Set(filmeAtual.production_companies);
             const interseccaoProdutoras = new Set([...produtorasEntrada].filter(c => produtorasAtual.has(c)));
             const uniaoProdutoras = new Set([...produtorasEntrada, ...produtorasAtual]);
             const sim_produtoras = uniaoProdutoras.size === 0 ? 0 : interseccaoProdutoras.size / uniaoProdutoras.size;
 
-            // c) Duração
-            const sim_duracao = 1 - (Math.abs(filmeDeEntrada.runtime - filmeAtual.runtime) / intervaloDuracao);
+            const palavrasChaveAtual = new Set(filmeAtual.keywords);
+            const interseccaoPalavrasChave = new Set([...palavrasChaveEntrada].filter(g => palavrasChaveAtual.has(g)));
+            const uniaoPalavrasChave = new Set([...palavrasChaveEntrada, ...palavrasChaveAtual]);
+            const sim_palavrasChave = uniaoPalavrasChave.size === 0 ? 0 : interseccaoPalavrasChave.size / uniaoPalavrasChave.size;
 
-            // d) Tagline
-            const palavrasTaglineEntrada = new Set(filmeDeEntrada.tagline.toLowerCase().split(/\s+/));
-            const palavrasTaglineAtual = new Set(filmeAtual.tagline.toLowerCase().split(/\s+/));
-            const interseccaoTagline = new Set([...palavrasTaglineEntrada].filter(w => palavrasTaglineAtual.has(w)));
-            const uniaoTagline = new Set([...palavrasTaglineEntrada, ...palavrasTaglineAtual]);
-            const sim_tagline = uniaoTagline.size === 0 ? 0 : interseccaoTagline.size / uniaoTagline.size;
-
-            // e) Título
-            const palavrasTituloEntrada = new Set(filmeDeEntrada.original_title.toLowerCase().split(/\s+/));
             const palavrasTituloAtual = new Set(filmeAtual.original_title.toLowerCase().split(/\s+/));
             const interseccaoTitulo = new Set([...palavrasTituloEntrada].filter(w => palavrasTituloAtual.has(w)));
             const uniaoTitulo = new Set([...palavrasTituloEntrada, ...palavrasTituloAtual]);
             const sim_titulo = uniaoTitulo.size === 0 ? 0 : interseccaoTitulo.size / uniaoTitulo.size;
 
-            // --- Cálculo de Similaridade Global Ponderada ---
-            const similaridadeGlobal = 
-                sim_generos * pesos.genres +
-                sim_produtoras * pesos.production_companies +
-                sim_duracao * pesos.runtime +
-                sim_tagline * pesos.tagline +
-                sim_titulo * pesos.original_title;
-            
+            const sim_nota = 1 - (Math.abs(filmeDeEntrada.vote_average - filmeAtual.vote_average) / intervaloNotas);
+
+            // --- Similaridade Global ---
+            const similaridadePonderada =
+                sim_generos * pesos.generos +
+                sim_produtoras * pesos.produtoras +
+                sim_nota * pesos.notaMedia +
+                sim_palavrasChave * pesos.palavrasChave +
+                sim_titulo * pesos.titulo;
+
+            let somaTotalPesos = 0;
+
+            for (const chave in pesos) {
+                somaTotalPesos += pesos[chave];
+            }
+
+            const similaridadeGlobal = similaridadePonderada / somaTotalPesos;
+
+            console.log('generosAtual', generosAtual);
+            console.log('interseccaoGeneros', interseccaoGeneros);
+            console.log('uniaoGeneros', uniaoGeneros);
+            console.log('sim_generos', sim_generos);
+
             return { titulo: filmeAtual.original_title, pontuacao: similaridadeGlobal };
         });
-        
+
         // Ordena pela pontuação e pega os 5 melhores
         const top5 = similaridades.sort((a, b) => b.pontuacao - a.pontuacao).slice(0, 5);
 
@@ -142,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         tituloResultados.innerText = `Recomendações para "${tituloFilmeEntrada}"`;
-        listaRecomendacoes.innerHTML = ''; 
+        listaRecomendacoes.innerHTML = '';
 
         top5.forEach(filme => {
             const itemLista = document.createElement('li');
@@ -159,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
             encontrarTop5Similares(busca);
         }
     });
-    
+
     campoFilme.addEventListener('keyup', (evento) => {
         if (evento.key === 'Enter') botaoBuscar.click();
     });
