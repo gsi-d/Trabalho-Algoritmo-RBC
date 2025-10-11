@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function encontrarTop5Similares(tituloDoFilme) {
         // Encontra o filme de entrada na nossa base de dados
-        const filmeDeEntrada = dadosDosFilmes.find(f => f.original_title.toLowerCase() === tituloDoFilme.toLowerCase());
+        const filmeDeEntrada = dadosDosFilmes.find(f => f.original_title.toLowerCase().includes(tituloDoFilme.toLowerCase()));
         if (!filmeDeEntrada) {
             exibirResultados(tituloDoFilme, null); // null indica que o filme não foi encontrado
             return;
@@ -147,6 +147,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             return { titulo: filmeAtual.original_title, pontuacao: similaridadeGlobal };
         });
+
+        console.log('similaridades', similaridades);
 
         // Ordena pela pontuação e pega os 5 melhores
         const top5 = similaridades.sort((a, b) => b.pontuacao - a.pontuacao).slice(0, 5);
