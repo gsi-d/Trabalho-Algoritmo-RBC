@@ -1,41 +1,44 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Recomendação de Filmes (RBC)</title>
-    <link rel="stylesheet" href="css/style.css">
-    <script src="js/algoritmo.js"></script> 
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Recomendação de Filmes (RBC)</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/algoritmo.js" defer></script>
 </head>
 <body>
 
-    <header>
-        <h1>Sistema de Recomendação de Filmes (RBC)</h1>
-    </header>
+  <header class="header">
+    <h1>Movie<span class="accent">Match</span></h1>
+    <p class="subtitle">Sistema de Recomendação de Filmes (RBC)</p>
+  </header>
 
-    <main class="container">
-        
-        <section id="busca-container" class="card">
-            <h2>Busque por um Filme</h2>
-            <p>Digite o nome de um filme da base de dados para encontrar os 5 mais similares.</p>
-            <div class="form-busca">
-                <input type="text" id="filme-input" placeholder="Ex: Batman: O Cavaleiro Das Trevas">
-                <button id="buscar-btn">Encontrar Similares</button>
-            </div>
-        </section>
+  <main class="container">
 
-        <section id="resultados-container" class="card">
-            <h2 id="resultados-titulo">Recomendados</h2>
-            <ul id="lista-recomendacoes">
-                <li class="placeholder">Digite o nome de um filme e clique em buscar para ver as recomendações.</li>
-                </ul>
-        </section>
+    <section class="card search-card">
+      <h2>Busque seu Filme</h2>
+      <p>Descubra os filmes mais parecidos com o seu favorito.</p>
+      <div class="form-busca">
+        <input type="text" id="filme-input" placeholder="Digite o nome do filme...">
+        <button id="buscar-btn">
+          <span class="icon"></span> Buscar
+        </button>
+      </div>
+    </section>
 
-    </main>
+    <section class="card resultados-card">
+      <h2 id="resultados-titulo">Recomendações</h2>
+      <ul id="lista-recomendacoes">
+        <li class="placeholder">Digite o nome de um filme e clique em buscar.</li>
+      </ul>
+    </section>
 
-    <footer>
-        <p>Trabalho de Inteligência Artificial - Raciocínio Baseado em Casos</p>
-    </footer>
+  </main>
+
+  <footer>
+    <p>Desenvolvido para a disciplina de Inteligência Artificial – Raciocínio Baseado em Casos</p>
+  </footer>
 
 </body>
 </html>
