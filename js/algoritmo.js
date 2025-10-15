@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let dadosDosFilmes = [];
 
     // Pesos para a Similaridade Global
+    // Indexação: generos, palavrasChave, produtoras, notaMedia, titulo
     const pesos = {
         generos: 7,
         palavrasChave: 5,
@@ -18,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Carregamento e Processamento do Arquivo CSV ---
-    // Fase de representação e aquisição
+    // Fase de aquisição
     async function carregarDados() {
         try {
             const resposta = await fetch('BaseFilmes.csv');
@@ -32,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Fase de representação
     function processarCSV(texto) {
         const linhas = texto.split('\n');
         const cabecalhos = linhas[0].split(',').map(h => h.trim());
@@ -67,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- ALGORITMO RBC PRINCIPAL ---
-
+    // Fase de recuperação
     function encontrarTop5Similares(tituloDoFilme) {
         // Encontra o filme de entrada na nossa base de dados
         const filmeDeEntrada = dadosDosFilmes.find(f => f.original_title.toLowerCase().includes(tituloDoFilme.toLowerCase()));
