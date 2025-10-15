@@ -11,11 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Pesos para a Similaridade Global
     // Indexação: generos, palavrasChave, produtoras, notaMedia, titulo
     const pesos = {
-        generos: 7,
-        palavrasChave: 5,
-        produtoras: 4,
-        notaMedia: 3,
-        titulo: 1
+        generos: 0.4,
+        palavrasChave: 0.2,
+        produtoras: 0.2,
+        notaMedia: 0.1,
+        titulo: 0.1
     };
 
     // --- Carregamento e Processamento do Arquivo CSV ---
@@ -78,8 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        console.log('filmeDeEntrada', filmeDeEntrada);
-
         // Pré-cálculo para normalizar a nota média
         const notas = dadosDosFilmes.map(f => f.vote_average);
         const notaMinima = Math.min(...notas);
@@ -109,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const generosAtual = new Set(filmeAtual.genres);
             const generosEmComum = new Set([...generosEntrada].filter(g => generosAtual.has(g)));
             const uniaoGeneros = new Set([...generosEntrada, ...generosAtual]);
+            // 𝑠𝑖𝑚 (𝑥, 𝑦) = 1 −( 𝑦−𝑥 )/(𝑀𝑎𝑥 −𝑀𝑖n)
             const sim_generos = uniaoGeneros.size === 0 ? 0 : generosEmComum.size / uniaoGeneros.size;
 
             const produtorasAtual = new Set(filmeAtual.production_companies);
@@ -126,7 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const uniaoTitulo = new Set([...palavrasTituloEntrada, ...palavrasTituloAtual]);
             const sim_titulo = uniaoTitulo.size === 0 ? 0 : titulosEmComum.size / uniaoTitulo.size;
 
-            const sim_nota = 1 - (Math.abs(filmeDeEntrada.vote_average - filmeAtual.vote_average) / intervaloNotas);
+            // 𝑠𝑖𝑚 (𝑥, 𝑦) = 1 −( 𝑦−𝑥 )/(𝑀𝑎𝑥 −𝑀𝑖n)
+            const sim_nota = 1 - (Math.abs(filmeAtual.vote_average - filmeDeEntrada.vote_average) / intervaloNotas);
 
             // --- Similaridade Global ---
             const similaridadePonderada =
@@ -144,10 +144,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const similaridadeGlobal = similaridadePonderada / somaTotalPesos;
 
+            console.log('generoEntrada', generosEntrada);
             console.log('generosAtual', generosAtual);
             console.log('interseccaoGeneros', generosEmComum);
             console.log('uniaoGeneros', uniaoGeneros);
             console.log('sim_generos', sim_generos);
+            console.log('-------------------------------');
 
             return { titulo: filmeAtual.original_title, similaridade: similaridadeGlobal };
         });
@@ -161,7 +163,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 4. Funções de Exibição e Eventos ---
-
     function exibirResultados(tituloFilmeEntrada, top5) {
         if (!top5) {
             tituloResultados.innerText = `Resultados`;
