@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Carregamento e Processamento do Arquivo CSV ---
+    // Fase de representação e aquisição
     async function carregarDados() {
         try {
             const resposta = await fetch('BaseFilmes.csv');
@@ -25,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const textoCSV = await resposta.text();
             dadosDosFilmes = processarCSV(textoCSV);
             console.log(dadosDosFilmes)
-            console.log("Dados dos filmes carregados com sucesso!");
         } catch (erro) {
             console.error(erro);
             listaRecomendacoes.innerHTML = `<li class="placeholder">${erro.message}</li>`;
@@ -76,6 +76,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        console.log('filmeDeEntrada', filmeDeEntrada);
+
         // Pré-cálculo para normalizar a nota média
         const notas = dadosDosFilmes.map(f => f.vote_average);
         const notaMinima = Math.min(...notas);
@@ -103,24 +105,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // --- Similaridade Local ---
             const generosAtual = new Set(filmeAtual.genres);
-            const interseccaoGeneros = new Set([...generosEntrada].filter(g => generosAtual.has(g)));
+            const generosEmComum = new Set([...generosEntrada].filter(g => generosAtual.has(g)));
             const uniaoGeneros = new Set([...generosEntrada, ...generosAtual]);
-            const sim_generos = uniaoGeneros.size === 0 ? 0 : interseccaoGeneros.size / uniaoGeneros.size;
+            const sim_generos = uniaoGeneros.size === 0 ? 0 : generosEmComum.size / uniaoGeneros.size;
 
             const produtorasAtual = new Set(filmeAtual.production_companies);
-            const interseccaoProdutoras = new Set([...produtorasEntrada].filter(c => produtorasAtual.has(c)));
+            const produtorasEmComum = new Set([...produtorasEntrada].filter(c => produtorasAtual.has(c)));
             const uniaoProdutoras = new Set([...produtorasEntrada, ...produtorasAtual]);
-            const sim_produtoras = uniaoProdutoras.size === 0 ? 0 : interseccaoProdutoras.size / uniaoProdutoras.size;
+            const sim_produtoras = uniaoProdutoras.size === 0 ? 0 : produtorasEmComum.size / uniaoProdutoras.size;
 
             const palavrasChaveAtual = new Set(filmeAtual.keywords);
-            const interseccaoPalavrasChave = new Set([...palavrasChaveEntrada].filter(g => palavrasChaveAtual.has(g)));
+            const palavrasChaveEmComum = new Set([...palavrasChaveEntrada].filter(g => palavrasChaveAtual.has(g)));
             const uniaoPalavrasChave = new Set([...palavrasChaveEntrada, ...palavrasChaveAtual]);
-            const sim_palavrasChave = uniaoPalavrasChave.size === 0 ? 0 : interseccaoPalavrasChave.size / uniaoPalavrasChave.size;
+            const sim_palavrasChave = uniaoPalavrasChave.size === 0 ? 0 : palavrasChaveEmComum.size / uniaoPalavrasChave.size;
 
             const palavrasTituloAtual = new Set(filmeAtual.original_title.toLowerCase().split(/\s+/));
-            const interseccaoTitulo = new Set([...palavrasTituloEntrada].filter(w => palavrasTituloAtual.has(w)));
+            const titulosEmComum = new Set([...palavrasTituloEntrada].filter(w => palavrasTituloAtual.has(w)));
             const uniaoTitulo = new Set([...palavrasTituloEntrada, ...palavrasTituloAtual]);
-            const sim_titulo = uniaoTitulo.size === 0 ? 0 : interseccaoTitulo.size / uniaoTitulo.size;
+            const sim_titulo = uniaoTitulo.size === 0 ? 0 : titulosEmComum.size / uniaoTitulo.size;
 
             const sim_nota = 1 - (Math.abs(filmeDeEntrada.vote_average - filmeAtual.vote_average) / intervaloNotas);
 
@@ -141,17 +143,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const similaridadeGlobal = similaridadePonderada / somaTotalPesos;
 
             console.log('generosAtual', generosAtual);
-            console.log('interseccaoGeneros', interseccaoGeneros);
+            console.log('interseccaoGeneros', generosEmComum);
             console.log('uniaoGeneros', uniaoGeneros);
             console.log('sim_generos', sim_generos);
 
-            return { titulo: filmeAtual.original_title, pontuacao: similaridadeGlobal };
+            return { titulo: filmeAtual.original_title, similaridade: similaridadeGlobal };
         });
 
         console.log('similaridades', similaridades);
 
         // Ordena pela pontuação e pega os 5 melhores
-        const top5 = similaridades.sort((a, b) => b.pontuacao - a.pontuacao).slice(0, 5);
+        const top5 = similaridades.sort((a, b) => b.similaridade - a.similaridade).slice(0, 5);
 
         exibirResultados(filmeDeEntrada.original_title, top5);
     }
@@ -170,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         top5.forEach(filme => {
             const itemLista = document.createElement('li');
-            const percentual = (filme.pontuacao * 100).toFixed(2);
+            const percentual = (filme.similaridade * 100).toFixed(2);
             itemLista.innerHTML = `${filme.titulo} <span class="similaridade">Similaridade: ${percentual}%</span>`;
             listaRecomendacoes.appendChild(itemLista);
         });
